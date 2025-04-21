@@ -5,3 +5,4 @@ slowapi
 celery[redis]
 redis
 python-dotenv
+importlib-metadata<5.0

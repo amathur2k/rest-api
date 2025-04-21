@@ -4,34 +4,32 @@ import io
 
 app = FastAPI()
 
+@app.get("/")
+async def read_root():
+    return {"message": "Hello World"}
+
 @app.post("/processfile/")
 async def process_file(file: UploadFile = File(...)):
     """
-    Accepts a file upload, mocks processing, and returns a dummy file.
+    Receives a file, processes it (mocked), and returns a processed file.
+    Now modified to simply return the uploaded file directly.
     """
-    print(f"Received file: {file.filename}")
-    print(f"Content type: {file.content_type}")
+    # Return the uploaded file content directly
+    # We need to read the file content into a BytesIO object because
+    # the file object might be closed by the time StreamingResponse reads it.
+    file_content = await file.read()
+    content_stream = io.BytesIO(file_content)
+    
+    # Ensure the stream is reset to the beginning
+    content_stream.seek(0) 
 
-    # --- Mock file processing --- 
-    # In a real application, you would read the file content using:
-    # content = await file.read()
-    # And then process the content.
-    
-    # Here, we just simulate creating an output file.
-    output_content = f"Processed content for {file.filename}\nThis is mocked output."
-    output_stream = io.StringIO(output_content)
-    
-    # Define the output filename
-    output_filename = f"processed_{file.filename}.txt"
-    
-    # --- End Mock Processing ---
-    
     return StreamingResponse(
-        iter([output_stream.getvalue()]), 
-        media_type="text/plain", 
-        headers={"Content-Disposition": f"attachment; filename={output_filename}"}
+        content_stream,
+        media_type=file.content_type,
+        headers={"Content-Disposition": f"attachment; filename={file.filename}"}
     )
 
-@app.get("/")
-async def read_root():
-    return {"message": "Welcome to the File Processing API. Use the /processfile/ endpoint to upload files."}
+# Add this for local testing if needed
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
